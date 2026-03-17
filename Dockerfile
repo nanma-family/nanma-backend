@@ -1,21 +1,23 @@
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
-
+FROM node:20-slim AS builder
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci
-
 COPY . .
 RUN npx prisma generate
 RUN npm run build
 
 # ── Production stage ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
-
+FROM node:20-slim AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
+
+RUN apt-get update && \
+    apt-get install -y openssl ca-certificates netcat-openbsd && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -27,5 +29,10 @@ COPY prisma ./prisma
 
 EXPOSE 3000
 
-# Run migrations then start
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "\
+  echo 'Waiting for database to be ready...' && \
+  for i in $(seq 1 30); do \
+    npx prisma migrate deploy && echo 'Migrations done!' && break || \
+    (echo \"Attempt $i/30 failed, retrying in 5s...\"; sleep 5); \
+  done && \
+  node dist/index.js"]
