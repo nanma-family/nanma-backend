@@ -1,5 +1,5 @@
 // src/routes/events.ts
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { prisma } from '../utils/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
@@ -38,7 +38,7 @@ const eventInclude = {
 };
 
 // ── GET /api/events ────────────────────────────────────────────────────────────
-eventsRouter.get('/', async (_req, res) => {
+eventsRouter.get('/', async (_req: Request, res: Response) => {
   const events = await prisma.event.findMany({
     include: eventInclude,
     orderBy: { eventDate: 'asc' },
@@ -47,7 +47,7 @@ eventsRouter.get('/', async (_req, res) => {
 });
 
 // ── GET /api/events/:id ────────────────────────────────────────────────────────
-eventsRouter.get('/:id', async (req, res) => {
+eventsRouter.get('/:id', async (req: Request, res: Response) => {
   const event = await prisma.event.findUnique({
     where: { id: req.params.id },
     include: eventInclude,
@@ -64,7 +64,7 @@ eventsRouter.post(
     body('eventDate').isISO8601().withMessage('Valid date required'),
     body('type').isIn(['birthday', 'gathering', 'wedding', 'custom']),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 

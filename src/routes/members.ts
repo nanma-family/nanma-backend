@@ -1,5 +1,5 @@
 // src/routes/members.ts
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import { prisma } from '../utils/prisma';
@@ -27,7 +27,7 @@ const memberSelect = {
 };
 
 // ── GET /api/members ───────────────────────────────────────────────────────────
-membersRouter.get('/', async (_req, res) => {
+membersRouter.get('/', async (_req: Request, res: Response) => {
   const members = await prisma.member.findMany({
     select: memberSelect,
     orderBy: { name: 'asc' },
@@ -36,7 +36,7 @@ membersRouter.get('/', async (_req, res) => {
 });
 
 // ── GET /api/members/:id ───────────────────────────────────────────────────────
-membersRouter.get('/:id', async (req, res) => {
+membersRouter.get('/:id', async (req: Request, res: Response) => {
   const member = await prisma.member.findUnique({
     where: { id: req.params.id },
     select: memberSelect,
@@ -55,7 +55,7 @@ membersRouter.post(
     body('avatarInitials').notEmpty(),
     body('pin').isLength({ min: 4, max: 6 }).withMessage('PIN must be 4-6 digits'),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
@@ -97,7 +97,7 @@ membersRouter.post(
 );
 
 // ── PUT /api/members/:id ───────────────────────────────────────────────────────
-membersRouter.put('/:id', async (req: AuthRequest, res) => {
+membersRouter.put('/:id', async (req: AuthRequest, res: Response) => {
   // Members can only edit themselves; admins can edit anyone
   if (req.params.id !== req.memberId && !req.isAdmin) {
     return res.status(403).json({ error: 'You can only edit your own profile' });
@@ -124,7 +124,7 @@ membersRouter.put('/:id', async (req: AuthRequest, res) => {
 });
 
 // ── DELETE /api/members/:id ────────────────────────────────────────────────────
-membersRouter.delete('/:id', requireAdmin, async (req, res) => {
+membersRouter.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   await prisma.member.delete({ where: { id: req.params.id } });
   return res.json({ ok: true });
 });

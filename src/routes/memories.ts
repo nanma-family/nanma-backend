@@ -1,5 +1,5 @@
 // src/routes/memories.ts
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getMonth, getDate, getYear, differenceInYears } from 'date-fns';
 import { prisma } from '../utils/prisma';
@@ -10,7 +10,7 @@ memoriesRouter.use(authenticate);
 
 // ── GET /api/memories/on-this-day ─────────────────────────────────────────────
 // Returns events that happened on today's month+day in previous years
-memoriesRouter.get('/on-this-day', async (_req, res) => {
+memoriesRouter.get('/on-this-day', async (_req: Request, res: Response) => {
   const today = new Date();
   const todayMonth = getMonth(today) + 1; // 1-indexed
   const todayDay = getDate(today);
@@ -51,7 +51,7 @@ memoriesRouter.get('/on-this-day', async (_req, res) => {
 });
 
 // ── GET /api/milestones ────────────────────────────────────────────────────────
-memoriesRouter.get('/milestones', async (_req, res) => {
+memoriesRouter.get('/milestones', async (_req: Request, res: Response) => {
   const milestones = await prisma.milestone.findMany({
     orderBy: { date: 'desc' },
   });
@@ -67,7 +67,7 @@ memoriesRouter.post(
     body('date').isISO8601(),
     body('type').isIn(['anniversary', 'graduation', 'birthday', 'custom']),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
@@ -85,7 +85,7 @@ memoriesRouter.post(
 );
 
 // ── DELETE /api/milestones/:id ─────────────────────────────────────────────────
-memoriesRouter.delete('/milestones/:id', requireAdmin, async (req, res) => {
+memoriesRouter.delete('/milestones/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   await prisma.milestone.delete({ where: { id: req.params.id } });
   return res.json({ ok: true });
 });

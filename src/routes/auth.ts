@@ -1,5 +1,5 @@
 // src/routes/auth.ts
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
@@ -15,7 +15,7 @@ authRouter.post(
     body('inviteCode').trim().notEmpty().withMessage('Invite code required'),
     body('pin').isLength({ min: 4, max: 6 }).withMessage('PIN must be 4-6 digits'),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -48,7 +48,7 @@ authRouter.post(
 );
 
 // ── GET /api/auth/me ───────────────────────────────────────────────────────────
-authRouter.get('/me', authenticate, async (req: AuthRequest, res) => {
+authRouter.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   const member = await prisma.member.findUnique({
     where: { id: req.memberId },
     select: {
@@ -70,7 +70,7 @@ authRouter.get('/me', authenticate, async (req: AuthRequest, res) => {
 });
 
 // ── PUT /api/auth/fcm-token ────────────────────────────────────────────────────
-authRouter.put('/fcm-token', authenticate, async (req: AuthRequest, res) => {
+authRouter.put('/fcm-token', authenticate, async (req: AuthRequest, res: Response) => {
   const { fcmToken } = req.body;
   await prisma.member.update({
     where: { id: req.memberId },
@@ -87,7 +87,7 @@ authRouter.put(
     body('currentPin').notEmpty(),
     body('newPin').isLength({ min: 4, max: 6 }),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { currentPin, newPin } = req.body;
 
     const member = await prisma.member.findUnique({ where: { id: req.memberId } });
