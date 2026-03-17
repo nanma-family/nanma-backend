@@ -1,0 +1,154 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Members ────────────────────────────────────────────────────────────────────
+model Member {
+  id              String   @id @default(uuid())
+  name            String
+  nickname        String?
+  relation        String
+  birthday        DateTime?
+  phone           String?
+  city            String?
+  avatarUrl       String?
+  avatarColor     String?
+  avatarInitials  String
+  pinHash         String
+  inviteCode      String   @unique
+  fcmToken        String?
+  isAdmin         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  createdEvents   Event[]          @relation("EventCreator")
+  attendees       EventAttendee[]
+  uploadedPhotos  Photo[]
+  notifications   Notification[]
+
+  @@index([inviteCode])
+}
+
+// ── Events ─────────────────────────────────────────────────────────────────────
+model Event {
+  id             String      @id @default(uuid())
+  title          String
+  description    String?
+  eventDate      DateTime
+  location       String?
+  type           EventType   @default(custom)
+  coverPhotoUrl  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  createdBy      String
+  creator        Member          @relation("EventCreator", fields: [createdBy], references: [id])
+  attendees      EventAttendee[]
+  photos         Photo[]
+
+  @@index([eventDate])
+  @@index([createdBy])
+}
+
+enum EventType {
+  birthday
+  gathering
+  wedding
+  custom
+}
+
+// ── Event Attendees ────────────────────────────────────────────────────────────
+model EventAttendee {
+  id         String      @id @default(uuid())
+  eventId    String
+  memberId   String
+  rsvpStatus RsvpStatus  @default(pending)
+  attended   Boolean?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member     Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+  @@index([memberId])
+}
+
+enum RsvpStatus {
+  pending
+  attending
+  not_attending
+  maybe
+}
+
+// ── Photos ─────────────────────────────────────────────────────────────────────
+model Photo {
+  id           String   @id @default(uuid())
+  eventId      String
+  uploadedBy   String
+  url          String
+  thumbnailUrl String?
+  publicId     String?  // Cloudinary public_id for deletion
+  caption      String?
+  createdAt    DateTime @default(now())
+
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploader     Member   @relation(fields: [uploadedBy], references: [id])
+
+  @@index([eventId])
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────────
+model Notification {
+  id          String           @id @default(uuid())
+  memberId    String
+  title       String
+  body        String
+  type        NotificationType
+  data        Json?
+  sent        Boolean          @default(false)
+  read        Boolean          @default(false)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  member      Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([scheduledAt])
+}
+
+enum NotificationType {
+  birthday
+  event_reminder
+  event_created
+  memory
+  general
+}
+
+// ── Milestones ─────────────────────────────────────────────────────────────────
+model Milestone {
+  id        String        @id @default(uuid())
+  title     String
+  date      DateTime
+  type      MilestoneType @default(custom)
+  memberId  String?
+  createdAt DateTime      @default(now())
+}
+
+enum MilestoneType {
+  anniversary
+  graduation
+  birthday
+  custom
+}
